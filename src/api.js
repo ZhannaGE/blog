@@ -23,15 +23,56 @@ const api = createApi({
       }),
       transformResponse: (response) => response,
       providesTags: (result) =>
-        result?.articles
-          ? [
-              ...result.articles.map(({ slug }) => ({
-                type: "Articles",
-                id: slug,
-              })),
-              { type: "Articles", id: "LIST" },
-            ]
-          : [{ type: "Articles", id: "LIST" }],
+          result?.articles
+              ? [
+                ...result.articles.map(({ slug }) => ({
+                  type: "Articles",
+                  id: slug,
+                })),
+                { type: "Articles", id: "LIST" },
+              ]
+              : [{ type: "Articles", id: "LIST" }],
+    }),
+
+    createArticle: builder.mutation({
+      query: (articleData) => {
+        return {
+          url: "articles",
+          method: "POST",
+          body: { article: articleData },
+        };
+      },
+      transformResponse: (response) => response,
+      // invalidates cache for the list of articles after creating a new article
+      invalidatesTags: [{ type: "Articles", id: "LIST" }],
+    }),
+
+    updateArticle: builder.mutation({
+      query: ({ slug, articleData }) => {
+        if (!articleData) {
+          return;
+        }
+        return {
+          url: `articles/${slug}`,
+          method: "PUT",
+          body: { article: articleData },
+        };
+      },
+      transformResponse: (response) => response,
+      // invalidates cache for the list of articles after updating an article
+      invalidatesTags: [{ type: "Articles", id: "LIST" }],
+    }),
+
+    deleteArticle: builder.mutation({
+      query: (slug) => {
+        return {
+          url: `articles/${slug}`,
+          method: "DELETE",
+        };
+      },
+      transformResponse: (response) => response,
+      // invalidates cache for the list of articles after deleting an article
+      invalidatesTags: [{ type: "Articles", id: "LIST" }],
     }),
 
     getArticle: builder.query({
@@ -85,45 +126,7 @@ const api = createApi({
       invalidatesTags: ["User"],
     }),
 
-    createArticle: builder.mutation({
-      query: (articleData) => {
-        return {
-          url: "articles",
-          method: "POST",
-          body: { article: articleData },
-        };
-      },
-      transformResponse: (response) => {
-        return response;
-      },
-    }),
-    updateArticle: builder.mutation({
-      query: ({ slug, articleData }) => {
-        if (!articleData) {
-          return;
-        }
-        return {
-          url: `articles/${slug}`,
-          method: "PUT",
-          body: { article: articleData },
-        };
-      },
-      transformResponse: (response) => {
-        return response;
-      },
-    }),
 
-    deleteArticle: builder.mutation({
-      query: (slug) => {
-        return {
-          url: `articles/${slug}`,
-          method: "DELETE",
-        };
-      },
-      transformResponse: (response) => {
-        return response;
-      },
-    }),
     favoriteArticle: builder.mutation({
       query: (slug) => ({
         url: `articles/${slug}/favorite`,
