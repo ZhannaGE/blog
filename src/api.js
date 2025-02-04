@@ -96,11 +96,24 @@ const api = createApi({
       },
     }),
     getCurrentUser: builder.query({
-      query: () => "user",
+      query: () => {
+        const token = localStorage.getItem("jwt_token"); // или где хранится токен
+        if (!token) {
+          throw new Error("User is not authenticated");
+        }
+        return {
+          url: "user",
+          headers: {
+            Authorization: `Token ${token}`,
+          },
+        };
+      },
       transformResponse: (response) => response,
       keepUnusedDataFor: 60,
       providesTags: ["User"],
     }),
+
+
     login: builder.mutation({
       query: (loginData) => {
         return {

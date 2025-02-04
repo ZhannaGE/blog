@@ -15,10 +15,18 @@ import { useEffect, useState } from "react";
 export default function ArticleItem() {
   const { slug } = useParams();
   const navigate = useNavigate();
+
+  // Получаем токен и проверяем аутентификацию
+  const token = localStorage.getItem("jwt_token");
   const { data, error, isLoading, refetch } = useGetArticleQuery(slug, {
     refetchOnMountOrArgChange: true,
   });
-  const { data: currentUser } = useGetCurrentUserQuery();
+
+  const { data: currentUser, error: userError } = useGetCurrentUserQuery(
+      undefined,
+      { skip: !token } // Пропускаем запрос, если нет токена
+  );
+
   const [deleteArticle] = useDeleteArticleMutation();
   const [favoriteArticle] = useFavoriteArticleMutation();
   const [unfavoriteArticle] = useUnFavoriteArticleMutation();
@@ -28,10 +36,8 @@ export default function ArticleItem() {
   const article = data?.article;
 
   useEffect(() => {
-    const user = localStorage.getItem("user");
-    const token = localStorage.getItem("jwt_token");
-    setIsUserLoggedIn(!!user && !!token);
-  }, [currentUser]);
+    setIsUserLoggedIn(!!token); // Проверка, авторизован ли пользователь через токен
+  }, [token]);
 
   const handleLike = async () => {
     try {
@@ -75,6 +81,16 @@ export default function ArticleItem() {
   if (isLoading) return <p>Loading...</p>;
   if (error) return <p>Error loading article: {error.message}</p>;
 
+  // Обрабатываем ошибку аутентификации
+  if (userError) {
+    return (
+        <div>
+          <p>Error: {userError.message}</p>
+          <Button onClick={() => navigate("/sign-in")}>Login</Button>
+        </div>
+    );
+  }
+
   if (!article) return null;
 
   return (
@@ -99,7 +115,6 @@ export default function ArticleItem() {
                 )}
                 <span> {article.favoritesCount}</span>
                 <br />
-
                 <div className="border">
                   {article.tagList?.length && article.tagList.join(", ").trim()
                       ? article.tagList.join(", ")

@@ -18,7 +18,13 @@ export default function ArticleLists() {
   const navigate = useNavigate();
 
   const { data, error, isLoading, refetch } = useGetArticlesQuery({ page: currentPage });
-  const { data: currentUser } = useGetCurrentUserQuery();
+
+  // Проверка наличия токена перед выполнением запроса для текущего пользователя
+  const token = localStorage.getItem("jwt_token");
+  const { data: currentUser, error: currentUserError, isLoading: currentUserLoading } = token
+      // eslint-disable-next-line react-hooks/rules-of-hooks
+      ? useGetCurrentUserQuery()
+      : { data: null, error: null, isLoading: false };
 
   const [favoriteArticle] = useFavoriteArticleMutation();
   const [unfavoriteArticle] = useUnFavoriteArticleMutation();
@@ -29,7 +35,7 @@ export default function ArticleLists() {
     const user = localStorage.getItem("user");
     const token = localStorage.getItem("jwt_token");
     setIsUserLoggedIn(!!user && !!token);
-  }, [currentUser]);
+  }, [currentUser, token]);
 
   useEffect(() => {
     if (data?.articles) {
@@ -64,7 +70,7 @@ export default function ArticleLists() {
     localStorage.setItem("currentPage", page);
   };
 
-  if (isLoading) {
+  if (isLoading || currentUserLoading) {
     return (
         <div className="height">
           <Spin size="large" />
@@ -78,6 +84,11 @@ export default function ArticleLists() {
           <Alert message="Error loading articles." type="error" showIcon />
         </div>
     );
+  }
+
+  // Если пользователь не авторизован, мы не показываем ошибку загрузки пользователя
+  if (currentUserError) {
+    return null;
   }
 
   return (
